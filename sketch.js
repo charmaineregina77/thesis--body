@@ -1,3 +1,4 @@
+// Modify these variables to account for full screen
 let video;
 let pose;
 let poses = [];
@@ -9,13 +10,14 @@ let prevPositions = {};
 let savedFrames = [];
 let sequences = [];
 let frameLimit = 6;
-let sequenceLimit = 9; // Matches the correct number of black box positions
+let sequenceLimit = 8;
 let scoresheet;
-let yPositions = [286, 582, 886, 1194, 1502, 1806, 2114, 2422, 2730];
+let yPositions = [286, 594, 902, 1210, 1518, 1826, 2134, 2442];
 let progressDisplay;
-let currentSequenceSizeRange; // Store current sequence's size range
+let currentSequenceSizeRange;
 let container;
 let promptSelect;
+let windowWidth, windowHeight; // Add variables to track window dimensions
 const prompts = [
   "Select a prompt...",
   "I am feeling...",
@@ -31,6 +33,7 @@ const prompts = [
 let isWebcamActive = false;
 let terzaFont;
 let isFontLoaded = false;
+let controlsOverlay; // New variable for the controls overlay
 
 function preload() {
   scoresheet = loadImage("scoresheet-embodiedlogo.png", () => {
@@ -56,36 +59,63 @@ function preload() {
 }
 
 function setup() {
+  // Get window dimensions
+  windowWidth = window.innerWidth;
+  windowHeight = window.innerHeight;
+  
   // Create a wrapper div for the entire content
   let wrapper = createDiv('');
   wrapper.style('display', 'flex');
   wrapper.style('flex-direction', 'column');
   wrapper.style('align-items', 'center');
   wrapper.style('width', '100%');
-  wrapper.style('min-height', '100vh');
-  wrapper.style('background-color', '#FFFFCC');
-  wrapper.style('padding-top', '20px');
+  wrapper.style('height', '100vh'); // Set to full viewport height
+  wrapper.style('background-color', '#Faf2f6');
+  wrapper.style('padding', '0'); // Remove padding
+  wrapper.style('margin', '0'); // Remove margin
+  wrapper.style('overflow', 'hidden'); // Prevent scrolling
+  wrapper.position(0, 0); // Position at top-left corner
   
-  // Create the main container for canvas and prompt
+  // Create the main container that will hold the canvas and controls
   container = createDiv('');
   container.style('display', 'flex');
   container.style('flex-direction', 'column');
   container.style('align-items', 'center');
   container.style('justify-content', 'center');
   container.style('width', '100%');
-  container.style('flex-grow', '1');
-  container.style('gap', '15px');
+  container.style('height', '100%');
+  container.style('position', 'relative'); // Important for absolute positioning of children
   container.parent(wrapper);
+  
+  // Create a full-screen canvas
+  let cnv = createCanvas(windowWidth, windowHeight);
+  cnv.style('display', 'block');
+  cnv.parent(container);
+  
+  // Create the overlay for controls that will float above the canvas
+  controlsOverlay = createDiv('');
+  controlsOverlay.style('position', 'absolute');
+  controlsOverlay.style('top', '20px');
+  controlsOverlay.style('left', '50%');
+  controlsOverlay.style('transform', 'translateX(-50%)');
+  controlsOverlay.style('width', '400px');
+  controlsOverlay.style('z-index', '100');
+  controlsOverlay.style('display', 'flex');
+  controlsOverlay.style('flex-direction', 'column');
+  controlsOverlay.style('gap', '15px');
+  controlsOverlay.style('background-color', 'rgba(255, 255, 204, 0.8)'); // Semi-transparent background
+  controlsOverlay.style('padding', '15px');
+  controlsOverlay.style('border-radius', '25px');
+  controlsOverlay.style('box-shadow', '0 4px 8px rgba(0, 0, 0, 0.1)');
+  controlsOverlay.parent(container);
   
   // Create name input container
   let nameContainer = createDiv('');
-  nameContainer.style('position', 'relative');
-  nameContainer.style('width', '400px');
-  nameContainer.style('margin-bottom', '8px');
+  nameContainer.style('width', '100%');
   nameContainer.style('display', 'flex');
   nameContainer.style('align-items', 'center');
   nameContainer.style('gap', '10px');
-  nameContainer.parent(container);
+  nameContainer.parent(controlsOverlay);
 
   // Create name label
   let nameLabel = createDiv('Your Name:');
@@ -126,12 +156,11 @@ function setup() {
   
   // Create custom dropdown container
   let dropdownContainer = createDiv('');
-  dropdownContainer.style('position', 'relative');
-  dropdownContainer.style('width', '400px'); // Match name input width
+  dropdownContainer.style('width', '100%');
   dropdownContainer.style('display', 'flex');
   dropdownContainer.style('align-items', 'center');
   dropdownContainer.style('gap', '10px');
-  dropdownContainer.parent(container);
+  dropdownContainer.parent(controlsOverlay);
 
   // Create prompt label
   let promptLabel = createDiv('Your Poem:');
@@ -272,22 +301,37 @@ function setup() {
     value: () => selectedPrompt
   };
   
-  let cnv = createCanvas(640, 480);
-  cnv.style('border-radius', '50px');
-  cnv.parent(container);
-  
-  // Create progress display below canvas
+  // Create progress display at bottom of screen
   progressDisplay = createDiv('');
-  progressDisplay.parent(container);
+  progressDisplay.style('position', 'absolute');
+  progressDisplay.style('bottom', '30px');
+  progressDisplay.style('left', '50%');
+  progressDisplay.style('transform', 'translateX(-50%)');
   progressDisplay.style('font-family', isFontLoaded ? 'Terza' : 'monospace');
-  progressDisplay.style('margin-top', '10px');
   progressDisplay.style('text-align', 'center');
-  progressDisplay.style('width', '640px');
   progressDisplay.style('color', '#663300');
   progressDisplay.style('font-size', '15px');
+  progressDisplay.style('background-color', 'rgba(255, 255, 204, 0.8)');
+  progressDisplay.style('padding', '10px 20px');
+  progressDisplay.style('border-radius', '25px');
+  progressDisplay.style('box-shadow', '0 4px 8px rgba(0, 0, 0, 0.1)');
+  progressDisplay.style('z-index', '100');
+  progressDisplay.parent(container);
   
   // Display initial message
   progressDisplay.html('Please select a prompt to begin...');
+  
+  // Add window resize event listener
+  window.addEventListener('resize', windowResized);
+}
+
+function windowResized() {
+  // Update window dimensions
+  windowWidth = window.innerWidth;
+  windowHeight = window.innerHeight;
+  
+  // Resize canvas to fill window
+  resizeCanvas(windowWidth, windowHeight);
 }
 
 function onPromptSelected() {
@@ -301,7 +345,7 @@ function onPromptSelected() {
 
 function startWebcam() {
   video = createCapture(VIDEO);
-  video.size(640, 480);
+  video.size(windowWidth, windowHeight); // Set video to window size
   video.hide();
 
   pose = new Pose({
@@ -322,8 +366,8 @@ function startWebcam() {
     onFrame: async () => {
       await pose.send({ image: video.elt });
     },
-    width: 640,
-    height: 480
+    width: windowWidth,  // Use window width
+    height: windowHeight // Use window height
   });
 
   camera.start();
@@ -339,18 +383,54 @@ function onPoseResults(results) {
 function draw() {
   clear();
   
-  // Draw rounded rectangle background
-  fill('#FAF2F6');
-  noStroke();
-  rect(0, 0, width, height, 50);
-
-  if (!isWebcamActive) {
-    return;  // Just return without drawing the message on canvas
+  // Draw webcam feed
+  if (video && isWebcamActive) {
+    // Save current transformation state
+    push();
+    
+    // Flip the canvas horizontally for mirror effect
+    translate(width, 0);
+    scale(-1, 1);
+    
+    // Draw the video to fill the screen while maintaining aspect ratio
+    let vidRatio = video.width / video.height;
+    let screenRatio = width / height;
+    
+    if (vidRatio > screenRatio) {
+      // Video is wider than screen
+      let newWidth = height * vidRatio;
+      image(video, -(newWidth), 0, newWidth, height);
+    } else {
+      // Video is taller than screen
+      let newHeight = width / vidRatio;
+      image(video, -width, (height - newHeight) / 2, width, newHeight);
+    }
+    
+    // Restore transformation state
+    pop();
+    
+    // Draw a semi-transparent overlay for better visibility of the controls
+    fill(255, 255, 204, 30); // Very light yellow with low opacity
+    noStroke();
+    rect(0, 0, width, height);
+  } else {
+    // If webcam not active, draw a background
+    fill('#FAF2F6');
+    noStroke();
+    rect(0, 0, width, height);
   }
 
-  if (poses.length > 0) {
+  if (poses.length > 0 && isWebcamActive) {
+    // Save current transformation state for pose drawing
+    push();
+    
+    // Flip the canvas horizontally
+    translate(width, 0);
+    scale(-1, 1);
+    
     let points = poses.map((lm, index) => {
-      let x = lm.x * width + width/6;
+      // Scale coordinates to full screen
+      let x = lm.x * width;
       let y = lm.y * height;
 
       let prev = prevPositions[index] || { x, y };
@@ -364,14 +444,19 @@ function draw() {
     drawDottedBezierArmsAndLegs(points);
     drawLandmarks(points);
     detectRightHandWave(points);
+    
+    // Restore transformation state
+    pop();
   }
 
   // Update progress display with instructions
   if (isWebcamActive) {
-    let progressText = `Frames: ${savedFrames.length}/${frameLimit} | Sequences: ${sequences.length}/${sequenceLimit}<br><span style="font-size: 14px; color: #663300; margin-top: 8px; display: block;">When you complete the sequence, it exports as a scoresheet.</span>`;
+    let progressText = `Frames: ${savedFrames.length}/${frameLimit} | Sequences: ${sequences.length}/${sequenceLimit}<br><span style="font-size: 14px; color: #663300; margin-top: 8px; display: block;">Wave your right hand to capture frames. When you complete the sequence, it exports as a scoresheet.</span>`;
     progressDisplay.html(progressText);
   }
 }
+
+// The rest of the functions remain largely unchanged but will work with the full-screen canvas
 
 function generateRandomSizeRange() {
   // Adjusted size ranges to be larger
@@ -403,8 +488,8 @@ function detectRightHandWave(points) {
       console.log("✅ Wave detected! Capturing sequence...");
 
       let sizeVariation = random(currentSequenceSizeRange.min, currentSequenceSizeRange.max);
-      let frameWidth = 640 * sizeVariation;
-      let frameHeight = 480 * sizeVariation;
+      let frameWidth = windowWidth * sizeVariation;
+      let frameHeight = (windowHeight * sizeVariation) * 0.5;
       let frameCanvas = createGraphics(frameWidth, frameHeight);
       
       // Set up the frame canvas with transparency
@@ -504,29 +589,27 @@ function storeSequence() {
     return;
   }
 
-  let availableWidth = 2150;  // Increased width for better visibility
-  let spacing = availableWidth / 6;  // More spacing between frames
+  let availableWidth = 2500;  
+  let spacing = availableWidth / 5;  
   
-  let sequenceCanvas = createGraphics(availableWidth, 800); // Increased height
+  // Reduce canvas height by 30%
+  let sequenceCanvas = createGraphics(availableWidth, 560);
   sequenceCanvas.clear();
 
-  // Place frames with better visibility
+  // Place frames with reduced height
   for (let i = 0; i < savedFrames.length; i++) {
     let frame = savedFrames[i];
     let baseX = (i * spacing);
     
-    // More subtle position variations
     let xOffset = random(-20, 20);
     let yOffset = random(-10, 10);
     
-    // Larger base size
-    let frameWidth = spacing * 0.9 * frame.sizeVariation;
-    let frameHeight = (frameWidth * 3) / 4;
+    // Calculate frame dimensions with 30% height reduction
+    let frameWidth = (spacing * 0.9 * frame.sizeVariation) * 0.85;
+    let frameHeight = (frameWidth * 3 / 4) * 0.7;
     
-    // Center vertically
-    let yPos = (800 - frameHeight) / 2 + yOffset;
+    let yPos = (560 - frameHeight) / 2 + yOffset;
     
-    // Add slight rotation
     sequenceCanvas.push();
     sequenceCanvas.translate(baseX + xOffset + frameWidth/2, yPos + frameHeight/2);
     sequenceCanvas.rotate(random(-0.05, 0.05));
@@ -536,7 +619,10 @@ function storeSequence() {
 
   sequences.push({
     canvas: sequenceCanvas,
-    frames: savedFrames.map(f => ({ width: f.canvas.width, height: f.canvas.height }))
+    frames: savedFrames.map(f => ({ 
+      width: f.canvas.width, 
+      height: f.canvas.height * 0.7
+    }))
   });
   
   console.log(`📸 Stored sequence ${sequences.length}/${sequenceLimit}`);
@@ -548,64 +634,48 @@ function storeSequence() {
 }
 
 function saveSequencesOnScoresheet() {
-  let finalCanvas = createGraphics(2550, 3300);
+  let finalCanvas = createGraphics(2750, 3300);
   finalCanvas.clear();
   finalCanvas.image(scoresheet, 0, 0);
 
-  // Set up text properties once for both texts
+  // Set up text properties
   finalCanvas.fill('#663300');
   finalCanvas.noStroke();
   if (isFontLoaded) {
     finalCanvas.textFont(terzaFont);
-  } else {
-    finalCanvas.textFont('monospace');
   }
   finalCanvas.textSize(36);
 
-  // Add the selected prompt text (left-aligned)
+  // Add header texts
   let selectedPrompt = promptSelect.value();
   if (selectedPrompt && selectedPrompt !== "Select a prompt...") {
     finalCanvas.textAlign(LEFT, TOP);
     finalCanvas.text(selectedPrompt, 244, 50);
   }
 
-  // Add the name (right-aligned)
   let userName = window.nameInput.value();
   if (userName) {
     finalCanvas.textAlign(RIGHT, TOP);
     finalCanvas.text('Your Name: ' + userName, 2306, 50);
   }
 
-  // Define line positions and spacing
-  const linePositions = [286, 594, 902, 1210, 1518, 1826, 2134, 2442, 2750];
-  const horizontalMargin = 244;
+  // Define layout parameters
+  const horizontalMargin = 244 - (2062 * 0.15);
   const availableWidth = 2062;
+  const linePositions = [286, 594, 902, 1210, 1518, 1826, 2134, 2442];
+  const sequenceWidth = availableWidth * 1.15;
 
-  // Place sequences on lines with larger sizes
   for (let i = 0; i < sequences.length; i++) {
     let sequence = sequences[i];
-    if (!sequence || !sequence.canvas) {
-      console.log(`⚠️ Warning: Invalid sequence at index ${i}`);
-      continue;
-    }
-    
-    // Calculate base size for this sequence - increased size
-    let baseWidth = random(400, 600); // Increased from 250-350 to 400-600
-    let scaleFactor = baseWidth / sequence.canvas.width;
-    let baseHeight = sequence.canvas.height * scaleFactor;
-    
-    // Calculate position
-    let yPos = linePositions[i] - baseHeight/2;
-    let xPos = horizontalMargin + random(0, availableWidth - baseWidth);
-    
-    // Add slight rotation for organic feel
-    let rotation = random(-0.05, 0.05);
-    
-    // Apply the transformation
+    if (!sequence || !sequence.canvas) continue;
+
+    let sequenceHeight = sequence.canvas.height;
+    let xPos = horizontalMargin + (availableWidth - sequenceWidth) / 2;
+    let yPos = linePositions[i] - sequenceHeight / 2;
+
     finalCanvas.push();
-    finalCanvas.translate(xPos + baseWidth/2, yPos + baseHeight/2);
-    finalCanvas.rotate(rotation);
-    finalCanvas.image(sequence.canvas, -baseWidth/2, -baseHeight/2, baseWidth, baseHeight);
+    finalCanvas.translate(xPos, yPos);
+    finalCanvas.image(sequence.canvas, 0, 0, sequenceWidth, sequenceHeight);
     finalCanvas.pop();
   }
 
@@ -646,7 +716,7 @@ function drawDottedBezier(x1, y1, x2, y2, x3, y3) {
       line(px1, py1, px2, py2);
     }
 
-    draw = !draw; // Toggle between drawing and skipping to create dashes
+    draw = !draw;
   }
 }
 
@@ -669,12 +739,62 @@ function drawDottedBezierArmsAndLegs(points) {
 }
 
 function drawLandmarks(points) {
+  // Face landmarks configuration
+  const faceLandmarks = {
+    eyes: [33, 133],
+    mouth: [168],
+    faceOutline: [10, 338, 297, 332, 284, 251, 389, 356]
+  };
+
+  const handLandmarks = [
+    [16, 18, 20],  // Right hand
+    [15, 17, 19]   // Left hand
+  ];
+
+  // Enable smooth circles
+  smooth();
+
+  // Draw face outline points
   fill('#FFFFCC');
   stroke('#663300');
   strokeWeight(1);
-  for (let i = 0; i < points.length; i += 2) {
+  for (let i of faceLandmarks.faceOutline) {
     let p = points[i];
-    let dotSize = map(p.movement, 0, 50, 20, 60, true);
-    ellipse(p.x, p.y, dotSize, dotSize);
+    if (p) {
+      circle(p.x, p.y, 30); // Perfect circles for face outline
+    }
+  }
+
+  // Draw eyes and mouth with brighter yellow fill
+  fill('#FFFF99');
+  stroke('#663300');
+  strokeWeight(1);
+
+  // Draw eyes
+  for (let i of faceLandmarks.eyes) {
+    let p = points[i];
+    if (p) {
+      circle(p.x, p.y, 25); // Perfect circles for eyes
+    }
+  }
+
+  // Draw mouth
+  for (let i of faceLandmarks.mouth) {
+    let p = points[i];
+    if (p) {
+      circle(p.x, p.y, 45); // Perfect circle for mouth
+    }
+  }
+
+  // Draw hand landmarks
+  fill('#FFFFCC');
+  for (let hand of handLandmarks) {
+    for (let i of hand) {
+      let p = points[i];
+      if (p) {
+        let dotSize = map(p.movement, 0, 50, 16, 48, true);
+        circle(p.x, p.y, dotSize); // Perfect circles for hand dots
+      }
+    }
   }
 }
