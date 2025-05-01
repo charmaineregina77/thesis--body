@@ -70,7 +70,7 @@ function setup() {
   wrapper.style('align-items', 'center');
   wrapper.style('width', '100%');
   wrapper.style('height', '100vh'); // Set to full viewport height
-  wrapper.style('background-color', '#Faf2f6');
+  wrapper.style('background-color', '#FAF2F6');
   wrapper.style('padding', '0'); // Remove padding
   wrapper.style('margin', '0'); // Remove margin
   wrapper.style('overflow', 'hidden'); // Prevent scrolling
