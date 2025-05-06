@@ -12,6 +12,7 @@ let sequences = [];
 let frameLimit = 6;
 let sequenceLimit = 8;
 let scoresheet;
+let embodiedLogo; // Add variable for the logo
 let yPositions = [286, 594, 902, 1210, 1518, 1826, 2134, 2442];
 let progressDisplay;
 let currentSequenceSizeRange;
@@ -40,6 +41,12 @@ function preload() {
     console.log("✅ Scoresheet loaded successfully!");
   }, () => {
     console.error("⚠️ ERROR: Scoresheet not found! Check filename & path.");
+  });
+  
+  embodiedLogo = loadImage("EmbodiedLogo.png", () => {
+    console.log("✅ Embodied logo loaded successfully!");
+  }, () => {
+    console.error("⚠️ ERROR: Embodied logo not found! Check filename & path.");
   });
   
   // Try to load Terza font with correct filename
@@ -76,6 +83,23 @@ function setup() {
   wrapper.style('overflow', 'hidden'); // Prevent scrolling
   wrapper.position(0, 0); // Position at top-left corner
   
+  // Create embodied logo
+  let logoImg = createImg('EmbodiedLogo.png', 'Embodied Logo', () => {
+    console.log("✅ Logo image element created successfully!");
+  }, () => {
+    console.error("⚠️ ERROR: Failed to create logo image element!");
+  });
+  logoImg.id('embodied-logo');
+  logoImg.style('position', 'fixed');
+  logoImg.style('top', '24px');
+  logoImg.style('left', '32px');
+  logoImg.style('right', 'unset');
+  logoImg.style('height', '60px');
+  logoImg.style('width', 'auto');
+  logoImg.style('z-index', '10002');
+  logoImg.style('cursor', 'pointer');
+  logoImg.parent(wrapper);
+  
   // Create the main container that will hold the canvas and controls
   container = createDiv('');
   container.style('display', 'flex');
@@ -108,6 +132,61 @@ function setup() {
   controlsOverlay.style('border-radius', '25px');
   controlsOverlay.style('box-shadow', '0 4px 8px rgba(0, 0, 0, 0.1)');
   controlsOverlay.parent(container);
+  
+  // Create burger menu
+  let burgerMenu = createDiv('');
+  burgerMenu.id('burger-menu');
+  burgerMenu.style('position', 'fixed');
+  burgerMenu.style('top', '24px');
+  burgerMenu.style('right', '32px');
+  burgerMenu.style('width', '56px');
+  burgerMenu.style('height', '56px');
+  burgerMenu.style('background', '#FFFFCC');
+  burgerMenu.style('border', '3px solid #663300');
+  burgerMenu.style('border-radius', '50%');
+  burgerMenu.style('display', 'flex');
+  burgerMenu.style('align-items', 'center');
+  burgerMenu.style('justify-content', 'center');
+  burgerMenu.style('z-index', '10001');
+  burgerMenu.style('cursor', 'pointer');
+  burgerMenu.style('box-shadow', '0 4px 16px 0 rgba(102, 51, 0, 0.13)');
+  burgerMenu.style('transition', 'box-shadow 0.2s, background 0.2s');
+  burgerMenu.mouseOver(() => {
+    burgerMenu.style('background', '#FFF9B2');
+    burgerMenu.style('box-shadow', '0 8px 24px 0 rgba(102, 51, 0, 0.18)');
+  });
+  burgerMenu.mouseOut(() => {
+    burgerMenu.style('background', '#FFFFCC');
+    burgerMenu.style('box-shadow', '0 4px 16px 0 rgba(102, 51, 0, 0.13)');
+  });
+  burgerMenu.mousePressed(() => {
+    window.location.href = 'https://readymag.website/u3988029614/embodied/select/';
+  });
+  burgerMenu.parent(container);
+
+  // Create burger icon
+  let burgerIcon = createDiv('');
+  burgerIcon.class('burger-icon');
+  burgerIcon.style('display', 'flex');
+  burgerIcon.style('flex-direction', 'column');
+  burgerIcon.style('justify-content', 'center');
+  burgerIcon.style('align-items', 'center');
+  burgerIcon.style('width', '28px');
+  burgerIcon.style('height', '28px');
+  burgerIcon.style('gap', '6px');
+  burgerIcon.parent(burgerMenu);
+
+  // Create burger lines
+  for (let i = 0; i < 3; i++) {
+    let line = createDiv('');
+    line.style('display', 'block');
+    line.style('width', '28px');
+    line.style('height', '4px');
+    line.style('background', '#663300');
+    line.style('border-radius', '2px');
+    line.style('transition', 'background 0.2s');
+    line.parent(burgerIcon);
+  }
   
   // Create name input container
   let nameContainer = createDiv('');
