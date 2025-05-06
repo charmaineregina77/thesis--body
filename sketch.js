@@ -147,7 +147,7 @@ function setup() {
   burgerMenu.style('width', '45px');
   burgerMenu.style('height', '45px');
   burgerMenu.style('background', '#FFFFCC');
-  burgerMenu.style('border', '3px solid #663300');
+  burgerMenu.style('border', 'none');
   burgerMenu.style('border-radius', '50%');
   burgerMenu.style('display', 'flex');
   burgerMenu.style('align-items', 'center');
