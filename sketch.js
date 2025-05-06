@@ -35,6 +35,8 @@ let isWebcamActive = false;
 let terzaFont;
 let isFontLoaded = false;
 let controlsOverlay; // New variable for the controls overlay
+let baseFontSize = 16;
+let currentFontSize = baseFontSize;
 
 function preload() {
   scoresheet = loadImage("scoresheet-embodiedlogo.png", () => {
@@ -70,18 +72,21 @@ function setup() {
   windowWidth = window.innerWidth;
   windowHeight = window.innerHeight;
   
+  // Calculate initial font size based on screen width
+  updateFontSize();
+  
   // Create a wrapper div for the entire content
   let wrapper = createDiv('');
   wrapper.style('display', 'flex');
   wrapper.style('flex-direction', 'column');
   wrapper.style('align-items', 'center');
   wrapper.style('width', '100%');
-  wrapper.style('height', '100vh'); // Set to full viewport height
+  wrapper.style('height', '100vh');
   wrapper.style('background-color', '#FAF2F6');
-  wrapper.style('padding', '0'); // Remove padding
-  wrapper.style('margin', '0'); // Remove margin
-  wrapper.style('overflow', 'hidden'); // Prevent scrolling
-  wrapper.position(0, 0); // Position at top-left corner
+  wrapper.style('padding', '0');
+  wrapper.style('margin', '0');
+  wrapper.style('overflow', 'hidden');
+  wrapper.position(0, 0);
   
   // Create embodied logo
   let logoImg = createImg('EmbodiedLogo.png', 'Embodied Logo', () => {
@@ -139,8 +144,8 @@ function setup() {
   burgerMenu.style('position', 'fixed');
   burgerMenu.style('top', '24px');
   burgerMenu.style('right', '32px');
-  burgerMenu.style('width', '56px');
-  burgerMenu.style('height', '56px');
+  burgerMenu.style('width', '45px');
+  burgerMenu.style('height', '45px');
   burgerMenu.style('background', '#FFFFCC');
   burgerMenu.style('border', '3px solid #663300');
   burgerMenu.style('border-radius', '50%');
@@ -171,17 +176,17 @@ function setup() {
   burgerIcon.style('flex-direction', 'column');
   burgerIcon.style('justify-content', 'center');
   burgerIcon.style('align-items', 'center');
-  burgerIcon.style('width', '28px');
-  burgerIcon.style('height', '28px');
-  burgerIcon.style('gap', '6px');
+  burgerIcon.style('width', '22px');
+  burgerIcon.style('height', '22px');
+  burgerIcon.style('gap', '5px');
   burgerIcon.parent(burgerMenu);
 
   // Create burger lines
   for (let i = 0; i < 3; i++) {
     let line = createDiv('');
     line.style('display', 'block');
-    line.style('width', '28px');
-    line.style('height', '4px');
+    line.style('width', '22px');
+    line.style('height', '3px');
     line.style('background', '#663300');
     line.style('border-radius', '2px');
     line.style('transition', 'background 0.2s');
@@ -200,18 +205,24 @@ function setup() {
   let nameLabel = createDiv('Your Name:');
   nameLabel.style('color', '#663300');
   nameLabel.style('font-family', isFontLoaded ? 'Terza' : 'monospace');
-  nameLabel.style('font-size', '15px');
+  nameLabel.style('font-size', currentFontSize + 'px');
   nameLabel.style('white-space', 'nowrap');
   nameLabel.parent(nameContainer);
+
+  // Create name input wrapper to take remaining space
+  let nameInputWrapper = createDiv('');
+  nameInputWrapper.style('flex-grow', '1');
+  nameInputWrapper.style('position', 'relative');
+  nameInputWrapper.parent(nameContainer);
 
   // Create name input
   let nameInput = createInput('');
   nameInput.attribute('placeholder', '');
-  nameInput.style('flex-grow', '1'); // Allow input to take remaining space
+  nameInput.style('width', '100%');
   nameInput.style('background-color', '#FAF2F6');
   nameInput.style('color', '#663300');
   nameInput.style('font-family', isFontLoaded ? 'Terza' : 'monospace');
-  nameInput.style('font-size', '15px');
+  nameInput.style('font-size', currentFontSize + 'px');
   nameInput.style('padding', '10px 20px');
   nameInput.style('border', '2px solid #663300');
   nameInput.style('border-radius', '50px');
@@ -220,7 +231,7 @@ function setup() {
   nameInput.style('-webkit-appearance', 'none');
   nameInput.style('-moz-appearance', 'none');
   nameInput.style('appearance', 'none');
-  nameInput.parent(nameContainer);
+  nameInput.parent(nameInputWrapper);
 
   // Add focus effects
   nameInput.elt.addEventListener('focus', () => {
@@ -245,7 +256,7 @@ function setup() {
   let promptLabel = createDiv('Your Poem:');
   promptLabel.style('color', '#663300');
   promptLabel.style('font-family', isFontLoaded ? 'Terza' : 'monospace');
-  promptLabel.style('font-size', '15px');
+  promptLabel.style('font-size', currentFontSize + 'px');
   promptLabel.style('white-space', 'nowrap');
   promptLabel.parent(dropdownContainer);
 
@@ -260,7 +271,7 @@ function setup() {
   customSelect.style('background-color', '#FAF2F6');
   customSelect.style('color', '#663300');
   customSelect.style('font-family', isFontLoaded ? 'Terza' : 'monospace');
-  customSelect.style('font-size', '15px');
+  customSelect.style('font-size', currentFontSize + 'px');
   customSelect.style('padding', '10px 20px');
   customSelect.style('border', '2px solid #663300');
   customSelect.style('border-radius', '50px');
@@ -279,7 +290,7 @@ function setup() {
   textContainer.style('overflow', 'hidden');
   textContainer.style('text-overflow', 'ellipsis');
   textContainer.style('white-space', 'nowrap');
-  textContainer.style('font-size', '15px');
+  textContainer.style('font-size', currentFontSize + 'px');
   textContainer.parent(customSelect);
 
   // Add arrow to custom select
@@ -320,7 +331,7 @@ function setup() {
       option.style('padding', '8px 20px');
       option.style('color', '#663300');
       option.style('font-family', isFontLoaded ? 'Terza' : 'monospace');
-      option.style('font-size', '15px');
+      option.style('font-size', currentFontSize + 'px');
       option.style('cursor', 'pointer');
       option.style('transition', 'background-color 0.2s');
       option.style('white-space', 'nowrap');
@@ -389,7 +400,7 @@ function setup() {
   progressDisplay.style('font-family', isFontLoaded ? 'Terza' : 'monospace');
   progressDisplay.style('text-align', 'center');
   progressDisplay.style('color', '#663300');
-  progressDisplay.style('font-size', '15px');
+  progressDisplay.style('font-size', currentFontSize + 'px');
   progressDisplay.style('background-color', 'rgba(255, 255, 204, 0.8)');
   progressDisplay.style('padding', '10px 20px');
   progressDisplay.style('border-radius', '25px');
@@ -408,6 +419,9 @@ function windowResized() {
   // Update window dimensions
   windowWidth = window.innerWidth;
   windowHeight = window.innerHeight;
+  
+  // Update font sizes
+  updateFontSize();
   
   // Resize canvas to fill window
   resizeCanvas(windowWidth, windowHeight);
@@ -530,7 +544,7 @@ function draw() {
 
   // Update progress display with instructions
   if (isWebcamActive) {
-    let progressText = `Frames: ${savedFrames.length}/${frameLimit} | Sequences: ${sequences.length}/${sequenceLimit}<br><span style="font-size: 14px; color: #663300; margin-top: 8px; display: block;">Wave your right hand to capture frames. When you complete the sequence, it exports as a scoresheet.</span>`;
+    let progressText = `Frames: ${savedFrames.length}/${frameLimit} | Sequences: ${sequences.length}/${sequenceLimit}<br><span style="font-size: ${currentFontSize}px; color: #663300; margin-top: 8px; display: block;">Wave your right hand to capture frames. When you complete the sequence, it exports as a scoresheet.</span>`;
     progressDisplay.html(progressText);
   }
 }
@@ -876,4 +890,18 @@ function drawLandmarks(points) {
       }
     }
   }
+}
+
+// Add this new function for responsive font sizing
+function updateFontSize() {
+  // Base size on screen width, with minimum and maximum bounds
+  let scale = windowWidth / 1920; // 1920px as reference width
+  currentFontSize = Math.min(Math.max(baseFontSize * scale, 14), 20); // Min 14px, max 20px
+  
+  // Update all text elements
+  selectAll('div, input').forEach(element => {
+    if (element.style('font-size')) {
+      element.style('font-size', currentFontSize + 'px');
+    }
+  });
 }
